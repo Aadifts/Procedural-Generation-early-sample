@@ -1,0 +1,85 @@
+import random
+import noise
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Constants
+MAP_SIZE = (50, 50)  # Grid size of the map
+OCTAVES = 4          # Controls detail of Perlin noise
+PERSISTENCE = 0.5    # Controls contrast of terrain
+LACUNARITY = 2.0     # Controls frequency of noise
+SEED = random.randint(0, 100000)  # Random seed
+
+# Biome settings (height thresholds)
+BIOMES = {
+    "plains": {"range": (0.4, 0.6), "mobs": ["Rabbit", "Deer", "Wolf"]},
+    "forest": {"range": (0.6, 0.8), "mobs": ["Bear", "Elf", "Orc"]},
+    "desert": {"range": (0.2, 0.4), "mobs": ["Scorpion", "Sandworm", "Bandit"]},
+    "snow": {"range": (0.8, 1.0), "mobs": ["Yeti", "Ice Golem", "Frost Wolf"]},
+    "swamp": {"range": (0.0, 0.2), "mobs": ["Lizardman", "Swamp Beast", "Ghoul"]},
+}
+
+def generate_noise_map(size, seed):
+    """Generates a Perlin noise-based heightmap."""
+    width, height = size
+    noise_map = np.zeros((width, height))
+
+    for y in range(height):
+        for x in range(width):
+            nx, ny = x / width, y / height
+            noise_map[x][y] = noise.pnoise2(
+                nx * OCTAVES, ny * OCTAVES, octaves=OCTAVES, persistence=PERSISTENCE, 
+                lacunarity=LACUNARITY, repeatx=width, repeaty=height, base=seed
+            )
+    
+    # Normalize to 0-1 range
+    min_val = np.min(noise_map)
+    max_val = np.max(noise_map)
+    noise_map = (noise_map - min_val) / (max_val - min_val)
+
+    return noise_map
+
+def determine_biome(value):
+    """Determines the biome based on height value."""
+    for biome, data in BIOMES.items():
+        if data["range"][0] <= value < data["range"][1]:
+            return biome
+    return "unknown"
+
+def spawn_mobs(biome):
+    """Spawns mobs based on biome type."""
+    return random.choice(BIOMES[biome]["mobs"])
+
+def generate_map():
+    """Generates a full map with biomes and mobs."""
+    noise_map = generate_noise_map(MAP_SIZE, SEED)
+    map_data = []
+
+    for y in range(MAP_SIZE[1]):
+        row = []
+        for x in range(MAP_SIZE[0]):
+            height_value = noise_map[x][y]
+            biome = determine_biome(height_value)
+            mob = spawn_mobs(biome) if random.random() < 0.1 else None  # 10% chance of spawning
+            row.append((biome, mob))
+        map_data.append(row)
+
+    return map_data, noise_map
+
+def visualize_map(noise_map):
+    """Visualizes the generated terrain using matplotlib."""
+    plt.imshow(noise_map, cmap="terrain")
+    plt.colorbar()
+    plt.title("Procedurally Generated Map")
+    plt.show()
+
+# Generate multiple maps
+num_maps = 3
+for i in range(num_maps):
+    print(f"\n=== MAP {i+1} ===")
+    game_map, noise_map = generate_map()
+    
+    for row in game_map:
+        print(" ".join([biome[0].upper() for biome, _ in row]))  # Print first letter of biome
+    
+    visualize_map(noise_map)
