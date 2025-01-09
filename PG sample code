@@ -70,7 +70,7 @@ def visualize_map(noise_map):
     """Visualizes the generated terrain using matplotlib."""
     plt.imshow(noise_map, cmap="terrain")
     plt.colorbar()
-    plt.title("Procedurally Generated Map")
+    plt.title("Fixed biome 2")
     plt.show()
 
 # Generate multiple maps
